@@ -1,0 +1,8 @@
+.build/
+.swiftpm/
+.DS_Store
+dist/
+artifacts/
+Resources/dog-walk.png
+*.xcuserstate
+*.log

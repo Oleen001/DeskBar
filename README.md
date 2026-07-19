@@ -1,0 +1,54 @@
+# DeskBar
+
+DeskBar is a native macOS desktop companion that combines an app launcher, live system monitoring, AI usage limits, and a small animated pet in one Liquid Glass dashboard.
+
+![DeskBar preview](Docs/deskbar-preview.png)
+
+## Highlights
+
+- Lives on the desktop layer instead of floating over other apps
+- Launches and manages pinned macOS applications
+- Charts CPU, active memory, and network activity
+- Shows Codex and Claude usage windows, plan labels, and reset times
+- Includes configurable widgets, alerts, density, opacity, and launch-at-login settings
+- Uses responsive Liquid Glass styling with sub-150 ms hover feedback
+- Renders the idle white-dog companion with Lottie and respects Reduce Motion
+
+## Requirements
+
+- macOS 14 or later
+- Swift 6.1 toolchain or a compatible Xcode installation
+
+## Build
+
+```bash
+swift test
+./scripts/build-app.sh release
+open dist/DeskBar.app
+```
+
+The build script creates an ad-hoc signed app bundle at `dist/DeskBar.app` and embeds the required Lottie framework.
+
+To install the local build:
+
+```bash
+ditto dist/DeskBar.app /Applications/DeskBar.app
+open -a DeskBar
+```
+
+## AI usage connections
+
+DeskBar reads supported usage information from locally authenticated tools and stores local configuration in macOS preferences and Keychain. Authentication tokens and user-specific settings are not part of this repository.
+
+## Project structure
+
+```text
+Sources/DeskBar/       SwiftUI and AppKit application code
+Resources/WhiteDog/   Bundled Lottie animations
+Tests/DeskBarTests/   Unit tests
+scripts/              App bundle build script
+```
+
+## Status
+
+DeskBar is an early public build. The current pet remains in its idle animation; additional reaction animations are bundled for future interaction states.
