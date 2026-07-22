@@ -21,6 +21,12 @@ DeskBar is a native macOS desktop companion that combines an app launcher, live 
 
 ## Build
 
+WhiteDog animation JSON files are intentionally local-only and are not stored in
+the public repository. Download the licensed files from the IconScout links in
+`ASSET_PROVENANCE.md` and place all seven JSON files in `Resources/WhiteDog/`
+before building. The build script checks for every required file and stops with
+an actionable message if one is missing.
+
 ```bash
 swift test
 ./scripts/build-app.sh release
@@ -47,7 +53,7 @@ DeskBar reads supported usage information from locally authenticated tools and s
 
 ```text
 Sources/DeskBar/       SwiftUI and AppKit application code
-Resources/WhiteDog/   Bundled Lottie animations
+Resources/WhiteDog/   Local-only Lottie animations (not tracked by Git)
 Tests/DeskBarTests/   Unit tests
 scripts/              App bundle build script
 ```
