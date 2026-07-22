@@ -244,7 +244,9 @@ private struct AlertSummaryButton: View {
             onSettingsOpened()
         } label: {
             HStack(spacing: 5) {
-                Image(systemName: leadingAlert?.severity == .critical ? "exclamationmark.triangle.fill" : "bell.badge.fill")
+                Image(
+                    systemName: leadingAlert?.severity == .critical
+                        ? "exclamationmark.triangle.fill" : "bell.badge.fill")
                 Text("\(alerts.count)")
                     .monospacedDigit()
                 if showsTitle, let leadingAlert {
@@ -433,8 +435,8 @@ private struct MetricGraphCard: View {
                     }
                 }
             }
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
         }
         .padding(11)
         .frame(maxWidth: .infinity, minHeight: minimumHeight)
@@ -613,7 +615,8 @@ private struct AIQuotaGroupCard: View {
                         .foregroundStyle(.secondary)
                 }
 
-                ForEach(Array(displaySnapshots.prefix(2).enumerated()), id: \.element.id) { index, snapshot in
+                ForEach(Array(displaySnapshots.prefix(2).enumerated()), id: \.element.id) {
+                    index, snapshot in
                     quotaWindow(snapshot, index: index)
                 }
 
@@ -648,7 +651,7 @@ private struct AIQuotaGroupCard: View {
 
     private func quotaWindow(_ snapshot: AIQuotaSnapshot, index: Int) -> some View {
         let tint = quotaTint(snapshot)
-        let percentage = snapshot.reading?.fractionUsed.map { Int(($0 * 100).rounded()) }
+        let percentageLeft = snapshot.reading?.fractionRemaining.map { Int(($0 * 100).rounded()) }
 
         return VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 5) {
@@ -657,11 +660,11 @@ private struct AIQuotaGroupCard: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer(minLength: 4)
-                Text(percentage.map { "\($0)%" } ?? "N/A")
+                Text(percentageLeft.map { "\($0)% left" } ?? "N/A")
                     .font(.caption2.monospacedDigit().weight(.bold))
-                    .foregroundStyle(percentage == nil ? Color.secondary : tint)
+                    .foregroundStyle(percentageLeft == nil ? Color.secondary : tint)
             }
-            AIQuotaBar(fraction: snapshot.reading?.fractionUsed, tint: tint)
+            AIQuotaBar(fraction: snapshot.reading?.fractionRemaining, tint: tint)
             Text(resetLabel(snapshot))
                 .font(.caption2)
                 .foregroundStyle(snapshot.isStale ? Color.orange : Color.secondary)
@@ -710,7 +713,9 @@ private struct AIQuotaGroupCard: View {
 
     private var planTint: Color {
         if group.providerName.localizedCaseInsensitiveContains("claude") { return .orange }
-        if group.providerName.localizedCaseInsensitiveContains("codex") || group.providerName.localizedCaseInsensitiveContains("openai") {
+        if group.providerName.localizedCaseInsensitiveContains("codex")
+            || group.providerName.localizedCaseInsensitiveContains("openai")
+        {
             return .blue
         }
         return .purple
@@ -725,10 +730,11 @@ private struct AIQuotaGroupCard: View {
             providerDescription += ", \(resetCreditsAvailable) reset available"
         }
         let limits = displaySnapshots.prefix(2).enumerated().map { index, snapshot in
-            let usage = snapshot.reading?.fractionUsed
-                .map { "\(Int(($0 * 100).rounded())) percent used" }
-                ?? "usage unavailable"
-            return "\(windowLabel(snapshot, index: index)), \(usage), \(resetLabel(snapshot))"
+            let remaining =
+                snapshot.reading?.fractionRemaining
+                .map { "\(Int(($0 * 100).rounded())) percent left" }
+                ?? "limit unavailable"
+            return "\(windowLabel(snapshot, index: index)), \(remaining), \(resetLabel(snapshot))"
         }
         return ([providerDescription] + limits).joined(separator: ", ")
     }

@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import DeskBar
 
 final class AIQuotaModelsTests: XCTestCase {
@@ -8,10 +9,12 @@ final class AIQuotaModelsTests: XCTestCase {
         XCTAssertEqual(reading.used, 125)
         XCTAssertEqual(reading.limit, 100)
         XCTAssertEqual(reading.fractionUsed, 1)
+        XCTAssertEqual(reading.fractionRemaining, 0)
     }
 
     func testReadingWithoutPositiveLimitHasNoFraction() {
         XCTAssertNil(AIQuotaReading(used: 4, limit: 0, unit: .messages).fractionUsed)
+        XCTAssertNil(AIQuotaReading(used: 4, limit: 0, unit: .messages).fractionRemaining)
     }
 
     func testFreshnessBoundaryIsStale() {

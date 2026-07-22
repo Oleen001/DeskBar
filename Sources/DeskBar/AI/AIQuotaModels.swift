@@ -13,6 +13,7 @@ struct AIProviderID: RawRepresentable, Hashable, Codable, Sendable, ExpressibleB
     }
 
     static let openAI: Self = "openai"
+    static let openAICodexSecondary: Self = "openai.codex.secondary"
     static let gemini: Self = "gemini"
     static let claudeCodeFiveHour: Self = "claude-code.five-hour"
     static let claudeCodeSevenDay: Self = "claude-code.seven-day"
@@ -59,6 +60,12 @@ struct AIQuotaReading: Hashable, Codable, Sendable {
     var fractionUsed: Double? {
         guard used.isFinite, limit.isFinite, limit > 0 else { return nil }
         return min(max(used / limit, 0), 1)
+    }
+
+    /// The portion of the current window that is still available. UI uses this rather than
+    /// the underlying used value so a fuller bar always means more capacity remains.
+    var fractionRemaining: Double? {
+        fractionUsed.map { 1 - $0 }
     }
 }
 

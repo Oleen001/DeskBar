@@ -214,9 +214,11 @@ struct DeskBarSettingsView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     LabeledContent("Shortcut status", value: hotKeyStatus)
-                    Text("Press the shortcut to temporarily bring DeskBar above other apps. Hover and press animations stay at 120 ms or faster.")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        "Press the shortcut to temporarily bring DeskBar above other apps. Hover and press animations stay at 120 ms or faster."
+                    )
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                     Divider().opacity(0.45)
                     launchAtLoginControls
                 }
@@ -260,8 +262,12 @@ struct DeskBarSettingsView: View {
                     spacing: 8
                 ) {
                     if preferences.showCPU { metricTile("CPU", monitor.cpuUsageText, icon: "cpu") }
-                    if preferences.showRAM { metricTile("RAM", monitor.memoryActiveUsageText, icon: "memorychip") }
-                    if preferences.showNetwork { metricTile("NET", monitor.networkRate, icon: "arrow.up.arrow.down") }
+                    if preferences.showRAM {
+                        metricTile("RAM", monitor.memoryActiveUsageText, icon: "memorychip")
+                    }
+                    if preferences.showNetwork {
+                        metricTile("NET", monitor.networkRate, icon: "arrow.up.arrow.down")
+                    }
                     metricTile("Disk", monitor.diskCapacity, icon: "internaldrive")
                     metricTile("Battery", monitor.batteryStatus, icon: "battery.100")
                     metricTile("Thermal", monitor.thermalStatus, icon: "thermometer.medium")
@@ -289,7 +295,8 @@ struct DeskBarSettingsView: View {
                     )
                     .frame(minHeight: 180)
                 } else {
-                    ForEach(Array(applications.pinnedApps.bundleIdentifiers.enumerated()), id: \.element) { index, identifier in
+                    ForEach(Array(applications.pinnedApps.bundleIdentifiers.enumerated()), id: \.element) {
+                        index, identifier in
                         pinnedApplicationRow(identifier: identifier, index: index)
                         if index < applications.pinnedApps.bundleIdentifiers.count - 1 {
                             Divider().opacity(0.35)
@@ -304,9 +311,11 @@ struct DeskBarSettingsView: View {
         glassSection("AI limits", icon: "chart.bar.xaxis", tint: .purple) {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("OpenAI/Codex uses your local Codex sign-in. Gemini and Antigravity quota are hidden because their CLI panels do not provide a supported machine-readable export. Add a manual estimate below when you want a visible limit bar.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        "OpenAI/Codex uses your local Codex sign-in. Gemini and Antigravity quota are hidden because their CLI panels do not provide a supported machine-readable export. Add a manual estimate below when you want a visible limit bar."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                     Spacer(minLength: 12)
                     Button("Refresh") { Task { await aiQuota.refresh() } }
                 }
@@ -317,9 +326,11 @@ struct DeskBarSettingsView: View {
                         TextField("Codex plan (auto if blank)", text: $preferences.codexPlanLabel)
                         TextField("Claude plan", text: $preferences.claudePlanLabel)
                     }
-                    Text("These labels are display-only. Codex uses the signed-in plan when the local app-server reports it; a typed value overrides that label.")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        "These labels are display-only. Codex uses the signed-in plan when the local app-server reports it; a typed value overrides that label."
+                    )
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 }
                 quotaList
                 Divider().opacity(0.45)
@@ -414,9 +425,11 @@ struct DeskBarSettingsView: View {
                 }
             }
 
-            Text("DeskBar caches only Claude's documented 5-hour and 7-day percentages and reset times. Credentials, prompts, and account details stay with Claude Code.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            Text(
+                "DeskBar caches only Claude's documented 5-hour and 7-day percentages and reset times. Credentials, prompts, and account details stay with Claude Code."
+            )
+            .font(.caption2)
+            .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -427,7 +440,7 @@ struct DeskBarSettingsView: View {
             "Not connected"
         case .installed:
             "Connected · use Claude Code once to update the bars"
-        case let .needsRecovery(message), let .unavailable(message):
+        case .needsRecovery(let message), .unavailable(let message):
             message
         }
     }
@@ -435,9 +448,11 @@ struct DeskBarSettingsView: View {
     private var smartAlertControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             Toggle("System warnings", isOn: $alerts.systemAlertsEnabled)
-            Text("CPU and RAM require three high samples. Network spikes and thermal pressure alert immediately.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            Text(
+                "CPU and RAM require three high samples. Network spikes and thermal pressure alert immediately."
+            )
+            .font(.caption2)
+            .foregroundStyle(.secondary)
 
             if alerts.systemAlertsEnabled {
                 percentageSlider(
@@ -492,8 +507,11 @@ struct DeskBarSettingsView: View {
                 Divider().opacity(0.45)
                 ForEach(alerts.activeAlerts.prefix(4)) { alert in
                     HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: alert.severity == .critical ? "exclamationmark.triangle.fill" : "bell.badge.fill")
-                            .foregroundStyle(alert.severity == .critical ? Color.red : Color.orange)
+                        Image(
+                            systemName: alert.severity == .critical
+                                ? "exclamationmark.triangle.fill" : "bell.badge.fill"
+                        )
+                        .foregroundStyle(alert.severity == .critical ? Color.red : Color.orange)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(alert.title).font(.caption.weight(.semibold))
                             Text(alert.message).font(.caption2).foregroundStyle(.secondary)
@@ -548,23 +566,28 @@ struct DeskBarSettingsView: View {
 
     @ViewBuilder
     private var launchAtLoginControls: some View {
-        Toggle("Launch DeskBar at login", isOn: Binding(
-            get: { launchAtLogin.isEnabled },
-            set: { enabled in Task { await launchAtLogin.setEnabled(enabled) } }
-        ))
+        Toggle(
+            "Launch DeskBar at login",
+            isOn: Binding(
+                get: { launchAtLogin.isEnabled },
+                set: { enabled in Task { await launchAtLogin.setEnabled(enabled) } }
+            )
+        )
         .disabled(launchAtLogin.isUpdating || !launchAtLogin.state.canChangeRegistration)
 
         if case .requiresApproval = launchAtLogin.state {
             Button("Open Login Items Settings") {
                 launchAtLogin.openLoginItemsSettings()
             }
-        } else if case let .unavailable(message) = launchAtLogin.state {
+        } else if case .unavailable(let message) = launchAtLogin.state {
             Text(message).font(.caption).foregroundStyle(.secondary)
         } else if case .notFound = launchAtLogin.state {
             VStack(alignment: .leading, spacing: 6) {
-                Text("macOS could not register this local build automatically. You can still add DeskBar under Open at Login in System Settings.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "macOS could not register this local build automatically. You can still add DeskBar under Open at Login in System Settings."
+                )
+                .font(.caption)
+                .foregroundStyle(.secondary)
                 Button("Open Login Items Settings") {
                     launchAtLogin.openLoginItemsSettings()
                 }
@@ -586,7 +609,7 @@ struct DeskBarSettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     AIQuotaBar(
-                        fraction: snapshot.reading?.fractionUsed,
+                        fraction: snapshot.reading?.fractionRemaining,
                         tint: quotaTint(snapshot)
                     )
                     Text(snapshot.statusMessage)
@@ -630,9 +653,11 @@ struct DeskBarSettingsView: View {
                     Button("5 hours") { windowLabel = "5 hours" }
                     Button("Weekly") { windowLabel = "Weekly" }
                 }
-                Text("Add Claude twice with the same service name—once for each limit window. DeskBar will group both bars in one card.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                Text(
+                    "Add Claude twice with the same service name—once for each limit window. DeskBar will group both bars in one card."
+                )
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             }
             HStack {
                 TextField("Used", text: $used)
@@ -782,8 +807,8 @@ struct DeskBarSettingsView: View {
         case .inactive: "Inactive"
         case .registered: "Ready"
         case .registeredWithEventMonitor: "Ready with Accessibility permission"
-        case let .permissionRequired(message): message
-        case let .unavailable(message): message
+        case .permissionRequired(let message): message
+        case .unavailable(let message): message
         }
     }
 
@@ -837,7 +862,8 @@ struct DeskBarSettingsView: View {
     private func quotaMetadata(_ snapshot: AIQuotaSnapshot) -> String {
         var parts = [snapshot.source.label]
         if snapshot.isStale { parts.append("Stale") }
-        parts.append("Fetched \(snapshot.timing.fetchedAt.formatted(date: .abbreviated, time: .shortened))")
+        parts.append(
+            "Fetched \(snapshot.timing.fetchedAt.formatted(date: .abbreviated, time: .shortened))")
         if let resetsAt = snapshot.timing.resetsAt {
             parts.append("Resets \(resetsAt.formatted(date: .abbreviated, time: .shortened))")
         }
@@ -867,12 +893,14 @@ private struct EstimatedQuotaRow: View {
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.secondary)
                     }
-                    Text("\(configuration.used.formatted()) / \(configuration.limit.formatted()) \(configuration.unit.displayName)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        "\(configuration.used.formatted()) / \(configuration.limit.formatted()) \(configuration.unit.displayName)"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text("\(Int((fractionUsed * 100).rounded()))%")
+                Text("\(Int((fractionRemaining * 100).rounded()))% left")
                     .font(.caption.monospacedDigit().weight(.bold))
                     .foregroundStyle(quotaTint)
                 Stepper("Usage", value: usageBinding, in: 0...configuration.limit, step: usageStep)
@@ -887,7 +915,7 @@ private struct EstimatedQuotaRow: View {
                 .accessibilityLabel("Delete \(configuration.providerName) estimated limit")
             }
 
-            AIQuotaBar(fraction: fractionUsed, tint: quotaTint)
+            AIQuotaBar(fraction: fractionRemaining, tint: quotaTint)
 
             if let resetDate = configuration.resetDate {
                 Text("Estimated · resets \(resetDate.formatted(date: .abbreviated, time: .shortened))")
@@ -910,6 +938,10 @@ private struct EstimatedQuotaRow: View {
         min(max(configuration.used / configuration.limit, 0), 1)
     }
 
+    private var fractionRemaining: Double {
+        1 - fractionUsed
+    }
+
     private var quotaTint: Color {
         if fractionUsed >= 0.9 { return .red }
         if fractionUsed >= 0.75 { return .orange }
@@ -920,16 +952,18 @@ private struct EstimatedQuotaRow: View {
         Binding(
             get: { configuration.used },
             set: { newValue in
-                guard let updated = try? EstimatedQuotaConfiguration(
-                    id: configuration.id,
-                    providerName: configuration.providerName,
-                    windowLabel: configuration.windowLabel,
-                    used: newValue,
-                    limit: configuration.limit,
-                    unit: configuration.unit,
-                    currencyCode: configuration.currencyCode,
-                    resetDate: configuration.resetDate
-                ) else { return }
+                guard
+                    let updated = try? EstimatedQuotaConfiguration(
+                        id: configuration.id,
+                        providerName: configuration.providerName,
+                        windowLabel: configuration.windowLabel,
+                        used: newValue,
+                        limit: configuration.limit,
+                        unit: configuration.unit,
+                        currencyCode: configuration.currencyCode,
+                        resetDate: configuration.resetDate
+                    )
+                else { return }
                 try? store.update(updated)
             }
         )
@@ -944,8 +978,8 @@ private struct EstimatedQuotaRow: View {
     }
 }
 
-private extension AIQuotaUnit {
-    var displayName: String {
+extension AIQuotaUnit {
+    fileprivate var displayName: String {
         switch self {
         case .requests: "Requests"
         case .tokens: "Tokens"

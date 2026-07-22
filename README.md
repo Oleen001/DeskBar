@@ -9,10 +9,10 @@ DeskBar is a native macOS desktop companion that combines an app launcher, live 
 - Lives on the desktop layer instead of floating over other apps
 - Launches and manages pinned macOS applications
 - Charts CPU, active memory, and network activity
-- Shows Codex and Claude usage windows, plan labels, and reset times
+- Shows Codex and Claude capacity left, usage windows, plan labels, reset times, and a compact Notch status ribbon
 - Includes configurable widgets, alerts, density, opacity, and launch-at-login settings
 - Uses responsive Liquid Glass styling with sub-150 ms hover feedback
-- Renders the idle white-dog companion with Lottie and respects Reduce Motion
+- Lets the Lottie white-dog companion play six click reactions and respects Reduce Motion
 
 ## Requirements
 
@@ -28,6 +28,9 @@ open dist/DeskBar.app
 ```
 
 The build script creates an ad-hoc signed app bundle at `dist/DeskBar.app` and embeds the required Lottie framework.
+
+DeskBar source code is licensed under MIT. See `ASSET_PROVENANCE.md` for the
+separate provenance status of the bundled WhiteDog animations and third-party Lottie framework.
 
 To install the local build:
 
@@ -51,4 +54,4 @@ scripts/              App bundle build script
 
 ## Status
 
-DeskBar is an early public build. The current pet remains in its idle animation; additional reaction animations are bundled for future interaction states.
+DeskBar is an early public build. The pet rests against the panel edge, plays a different one-shot reaction when clicked, and then returns to idle.
