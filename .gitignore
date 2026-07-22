@@ -4,5 +4,6 @@
 dist/
 artifacts/
 Resources/dog-walk.png
+Resources/WhiteDog/*.json
 *.xcuserstate
 *.log

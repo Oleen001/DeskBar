@@ -11,6 +11,8 @@ final class DesktopPanelController {
     private let preferences: DeskBarPreferences
     private let settingsNavigation: DeskBarSettingsNavigation
     private var panels: [NSScreen: NSPanel] = [:]
+    private var notchPanels: [NSScreen: NSPanel] = [:]
+    private var notchHoverStates: [NSScreen: NotchHoverState] = [:]
     private var outsideClickMonitor: Any?
     private var desktopMouseMoveMonitor: Any?
     private var preferencesObserver: AnyCancellable?
@@ -49,6 +51,11 @@ final class DesktopPanelController {
             panel.orderOut(nil)
             panel.close()
         }
+        let notchScreens = screens.filter(supportsNotchOverlay(on:))
+        for (screen, panel) in notchPanels where !notchScreens.contains(screen) {
+            panel.orderOut(nil)
+            panel.close()
+        }
 
         for screen in screens {
             let panel = panel(for: screen)
@@ -56,7 +63,15 @@ final class DesktopPanelController {
             panel.orderFrontRegardless()
         }
 
+        for screen in notchScreens {
+            let notchPanel = notchPanel(for: screen)
+            position(notchPanel, atNotchOn: screen)
+            notchPanel.orderFrontRegardless()
+        }
+
         panels = panels.filter { screens.contains($0.key) }
+        notchPanels = notchPanels.filter { notchScreens.contains($0.key) }
+        notchHoverStates = notchHoverStates.filter { notchScreens.contains($0.key) }
         if isCommandMode {
             promoteCommandPanel()
         }
@@ -87,7 +102,8 @@ final class DesktopPanelController {
             panel.level = Self.desktopLevel
         }
 
-        let panel = screenContainingPointer().flatMap { panels[$0] }
+        let panel =
+            screenContainingPointer().flatMap { panels[$0] }
             ?? NSScreen.main.flatMap { panels[$0] }
             ?? panels.values.first
         guard let panel else {
@@ -112,7 +128,9 @@ final class DesktopPanelController {
         )
         panel.isFloatingPanel = false
         panel.level = Self.desktopLevel
-        panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle]
+        panel.collectionBehavior = [
+            .canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle,
+        ]
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = false
@@ -135,6 +153,58 @@ final class DesktopPanelController {
         return panel
     }
 
+    private func notchPanel(for screen: NSScreen) -> NSPanel {
+        if let existing = notchPanels[screen] { return existing }
+
+        let panel = NSPanel(
+            contentRect: .init(
+                origin: .zero,
+                size: NotchQuotaLayout.size(
+                    screenFrame: screen.frame,
+                    safeAreaTopInset: screen.safeAreaInsets.top
+                )
+            ),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isFloatingPanel = false
+        panel.level = .statusBar
+        panel.collectionBehavior = [
+            .canJoinAllSpaces, .stationary, .fullScreenAuxiliary, .ignoresCycle,
+        ]
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = false
+        panel.hidesOnDeactivate = false
+        panel.becomesKeyOnlyIfNeeded = true
+        panel.acceptsMouseMovedEvents = true
+        // This ribbon intentionally extends the visual language of the hardware notch, but it
+        // must never intercept the menu bar or camera-housing click region.
+        panel.ignoresMouseEvents = true
+        let hoverState = notchHoverState(for: screen)
+        panel.contentView = NSHostingView(
+            rootView: NotchStatusView(
+                monitor: monitor,
+                aiQuota: aiQuota,
+                hoverState: hoverState,
+                height: NotchQuotaLayout.size(
+                    screenFrame: screen.frame,
+                    safeAreaTopInset: screen.safeAreaInsets.top
+                ).height
+            )
+        )
+        notchPanels[screen] = panel
+        return panel
+    }
+
+    private func notchHoverState(for screen: NSScreen) -> NotchHoverState {
+        if let existing = notchHoverStates[screen] { return existing }
+        let state = NotchHoverState()
+        notchHoverStates[screen] = state
+        return state
+    }
+
     private func position(_ panel: NSPanel, on screen: NSScreen) {
         let preferredSize = DesktopPanelLayout.dashboardSize(
             visibleFrame: screen.visibleFrame,
@@ -152,13 +222,35 @@ final class DesktopPanelController {
         )
     }
 
+    private func position(_ panel: NSPanel, atNotchOn screen: NSScreen) {
+        panel.setFrame(
+            NotchQuotaLayout.frame(
+                screenFrame: screen.frame,
+                safeAreaTopInset: screen.safeAreaInsets.top
+            ),
+            display: true
+        )
+    }
+
+    private func supportsNotchOverlay(on screen: NSScreen) -> Bool {
+        guard screen.safeAreaInsets.top > 0,
+              screen.auxiliaryTopLeftArea != nil,
+              screen.auxiliaryTopRightArea != nil else {
+            return false
+        }
+        return true
+    }
+
+
     private func screenContainingPointer() -> NSScreen? {
         let location = NSEvent.mouseLocation
         let screens = NSScreen.screens
-        guard let index = DesktopPanelLayout.screenIndex(
-            containing: location,
-            frames: screens.map(\.frame)
-        ) else { return nil }
+        guard
+            let index = DesktopPanelLayout.screenIndex(
+                containing: location,
+                frames: screens.map(\.frame)
+            )
+        else { return nil }
         return screens[index]
     }
 
@@ -199,7 +291,10 @@ final class DesktopPanelController {
         stopOutsideClickMonitoring()
         stopDesktopHoverMonitoring()
         panels.values.forEach { $0.close() }
+        notchPanels.values.forEach { $0.close() }
         panels.removeAll()
+        notchPanels.removeAll()
+        notchHoverStates.removeAll()
     }
 
     private func startOutsideClickMonitoring() {
@@ -236,31 +331,45 @@ final class DesktopPanelController {
         timestamp: TimeInterval,
         modifierFlags: NSEvent.ModifierFlags
     ) {
+        updateNotchHover(at: location)
         guard !isCommandMode else { return }
 
         promotePanelUnderPointerIfDesktopIsActive(at: location)
 
         if preferences.displayMode == .pointerDisplay,
-           let pointerScreen = screenContainingPointer(),
-           panels[pointerScreen] == nil {
+            let pointerScreen = screenContainingPointer(),
+            panels[pointerScreen] == nil
+        {
             showOnAllDisplays()
             return
         }
 
         for panel in panels.values {
             let localLocation = panel.convertPoint(fromScreen: location)
-            guard let event = NSEvent.mouseEvent(
-                with: .mouseMoved,
-                location: localLocation,
-                modifierFlags: modifierFlags,
-                timestamp: timestamp,
-                windowNumber: panel.windowNumber,
-                context: nil,
-                eventNumber: 0,
-                clickCount: 0,
-                pressure: 0
-            ) else { continue }
+            guard
+                let event = NSEvent.mouseEvent(
+                    with: .mouseMoved,
+                    location: localLocation,
+                    modifierFlags: modifierFlags,
+                    timestamp: timestamp,
+                    windowNumber: panel.windowNumber,
+                    context: nil,
+                    eventNumber: 0,
+                    clickCount: 0,
+                    pressure: 0
+                )
+            else { continue }
             panel.sendEvent(event)
+        }
+    }
+
+    /// The top ribbon is visual-only so macOS retains ownership of menu-bar and notch clicks.
+    /// Its small hover response is driven from the existing global mouse observer instead.
+    private func updateNotchHover(at location: CGPoint) {
+        for (screen, state) in notchHoverStates {
+            let hovered = notchPanels[screen]?.frame.contains(location) ?? false
+            guard state.isHovered != hovered else { continue }
+            state.isHovered = hovered
         }
     }
 
@@ -270,7 +379,8 @@ final class DesktopPanelController {
     /// pointer leaves, or while another app / DeskBar Settings is active.
     private func promotePanelUnderPointerIfDesktopIsActive(at location: CGPoint) {
         let targetPanel = panels.values.first { $0.frame.contains(location) }
-        let canPromote = !NSApplication.shared.isActive
+        let canPromote =
+            !NSApplication.shared.isActive
             && targetPanel.map { desktopSurfaceIsExposedIfNeeded(panel: $0) } == true
 
         for panel in panels.values {
@@ -285,7 +395,8 @@ final class DesktopPanelController {
     private func desktopSurfaceIsExposedIfNeeded(panel: NSPanel) -> Bool {
         let now = ProcessInfo.processInfo.systemUptime
         if exposurePanelNumber == panel.windowNumber,
-           now - exposureCheckTimestamp < 0.25 {
+            now - exposureCheckTimestamp < 0.25
+        {
             return cachedPanelExposure
         }
 
@@ -297,24 +408,27 @@ final class DesktopPanelController {
 
     private func desktopSurfaceIsExposed(panel: NSPanel) -> Bool {
         guard let quartzPanelRect = quartzRect(for: panel.frame),
-              let windows = CGWindowListCopyWindowInfo(
-                  [.optionOnScreenOnly],
-                  kCGNullWindowID
-              ) as? [[String: Any]] else {
+            let windows = CGWindowListCopyWindowInfo(
+                [.optionOnScreenOnly],
+                kCGNullWindowID
+            ) as? [[String: Any]]
+        else {
             return false
         }
 
         let desktopIconLevel = Int(CGWindowLevelForKey(.desktopIconWindow))
-        let deskBarOwner = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String
+        let deskBarOwner =
+            Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String
             ?? "DeskBar"
 
         // Desktop/Finder background layers are safe. Any normal window intersecting any part of
         // the panel must keep it behind that app rather than allowing a partial overlay.
         for window in windows {
             guard let boundsDictionary = window[kCGWindowBounds as String] as? NSDictionary,
-                  let bounds = CGRect(dictionaryRepresentation: boundsDictionary),
-                  bounds.intersects(quartzPanelRect),
-                  (window[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 1 > 0 else {
+                let bounds = CGRect(dictionaryRepresentation: boundsDictionary),
+                bounds.intersects(quartzPanelRect),
+                (window[kCGWindowAlpha as String] as? NSNumber)?.doubleValue ?? 1 > 0
+            else {
                 continue
             }
 
@@ -329,10 +443,12 @@ final class DesktopPanelController {
     }
 
     private func quartzRect(for rect: CGRect) -> CGRect? {
-        guard let screen = NSScreen.screens.first(where: {
-            $0.frame.contains(CGPoint(x: rect.midX, y: rect.midY))
-        }),
-              let displayNumber = screen.deviceDescription[.init("NSScreenNumber")] as? NSNumber else {
+        guard
+            let screen = NSScreen.screens.first(where: {
+                $0.frame.contains(CGPoint(x: rect.midX, y: rect.midY))
+            }),
+            let displayNumber = screen.deviceDescription[.init("NSScreenNumber")] as? NSNumber
+        else {
             return nil
         }
         let displayBounds = CGDisplayBounds(displayNumber.uint32Value)

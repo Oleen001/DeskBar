@@ -1,5 +1,6 @@
 import CoreGraphics
 import XCTest
+
 @testable import DeskBar
 
 final class DesktopPanelLayoutTests: XCTestCase {
@@ -46,7 +47,7 @@ final class DesktopPanelLayoutTests: XCTestCase {
         let displays = [
             CGRect(x: -1920, y: 0, width: 1920, height: 1080),
             CGRect(x: 0, y: 0, width: 1470, height: 956),
-            CGRect(x: 1470, y: -400, width: 1280, height: 1024)
+            CGRect(x: 1470, y: -400, width: 1280, height: 1024),
         ]
 
         XCTAssertEqual(
@@ -62,4 +63,19 @@ final class DesktopPanelLayoutTests: XCTestCase {
             2
         )
     }
+
+    func testNotchRibbonIsCenteredAtTopAndMatchesTheNotchSafeAreaHeight() {
+        let screenFrame = CGRect(x: 0, y: 0, width: 1512, height: 944)
+
+        let frame = NotchQuotaLayout.frame(
+            screenFrame: screenFrame,
+            safeAreaTopInset: 46
+        )
+
+        XCTAssertEqual(frame.midX, screenFrame.midX)
+        XCTAssertEqual(frame.maxY, screenFrame.maxY)
+        XCTAssertEqual(frame.height, 46)
+        XCTAssertEqual(frame.width, NotchQuotaLayout.width)
+    }
+
 }

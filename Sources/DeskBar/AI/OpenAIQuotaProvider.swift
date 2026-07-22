@@ -18,7 +18,7 @@ struct OpenAIQuotaProvider: AIQuotaProvider {
     ) {
         self.window = window
         self.bridge = bridge
-        id = window == .primary ? .openAI : AIProviderID(rawValue: "openai.codex.secondary")
+        id = window == .primary ? .openAI : .openAICodexSecondary
     }
 
     init(
@@ -91,13 +91,14 @@ struct OpenAIQuotaProvider: AIQuotaProvider {
         }
 
         let usedPercent = min(max(value.usedPercent, 0), 100)
+        let remainingPercent = 100 - usedPercent
         let label = value.windowDurationMinutes
             .map(Self.windowLabel(durationMinutes:)) ?? fallbackWindowLabel
         let resetDate = value.resetsAtEpochSeconds.flatMap {
             $0 > 0 ? Date(timeIntervalSince1970: TimeInterval($0)) : nil
         }
         let stateMessage = statusMessage
-            ?? "\(usedPercent)% of the \(label.lowercased()) Codex limit is used."
+            ?? "\(remainingPercent)% of the \(label.lowercased()) Codex limit is left."
         let freshUntil = isStale
             ? record.staleAt ?? record.fetchedAt
             : record.fetchedAt.addingTimeInterval(20 * 60)
